@@ -1,0 +1,233 @@
+<html>
+<head>
+	<script language="javascript" src="jquery-1.7.2.min.js"></script>
+	<style>
+		.obj
+		{
+			display:block;
+			
+			background:red;
+			position:absolute;
+		}
+		.rastro{
+			display:block;
+			width:2px;
+			height:2px;
+			background:black;
+			position:absolute;
+		}
+	</style>
+	<script>
+	function PhysicalObject(id)
+	{
+		this.xVelocidad=0.0;//px/s
+		this.yVelocidad=0.0;//px/s
+		this.xPos=20.0;
+		this.yPos=20.0;
+		this.masa=10;//gramos
+		this.radio=10;
+		this.xFuerza=0;
+		this.yFuerza=0;
+		this.static=false;
+		this.id=id;
+		this.removed=false;
+	}
+	
+		
+		var mouseXPos=0;
+		
+		var mouseYPos=0;
+		var tiempo=0.0;
+		var frameRate=10;
+		var i=0;
+		var nId=4;
+		var G = 10000;//6.6726 *Math.pow(10,-11)*1000;
+		var minDistance=10;//ignore inferior
+		var obj1= new PhysicalObject("1");
+		var obj2= new PhysicalObject("2");
+		
+		var obj3= new PhysicalObject("3");
+		
+		var objs=[obj2,obj3];
+
+		
+			
+		function ready(){
+			obj2.xPos=400;
+			obj2.yPos=100;
+			//obj2.static=true;
+			
+			obj2.xVelocidad=100;
+			obj1.xVelocidad=50;
+			obj1.xPos=400;
+			obj1.masa=1;
+			obj1.radio=2;
+			
+			
+				obj3.xPos=400;
+				obj3.yPos=300;
+				obj3.masa=200;
+				obj3.radio=100;
+				obj3.static=true;
+			
+			var d = new Date();
+			var n = d.getTime();
+			var seconds=n/1000;
+			tiempo=seconds;
+			setTimeout("loop()",frameRate);
+			$("body").keydown(function(event) {
+				   if ( event.which == 39 ) {
+						obj1.xFuerza=1000;
+				   }else if(event.which == 37){
+						obj1.xFuerza=-1000;
+					}
+					
+					if ( event.which == 38 ) {
+							obj1.yFuerza=-1000;
+					   }else if(event.which == 40){
+							obj1.yFuerza=1000;
+						}
+			});
+			$("body").keyup(function(event) {
+				   if ( event.which == 39 ) {
+						obj1.xFuerza=0;
+				   }else if(event.which == 37){
+						obj1.xFuerza=-0;
+					}
+					
+						if ( event.which == 38 ) {
+								obj1.yFuerza=0;
+						   }else if(event.which == 40){
+								obj1.yFuerza=0;
+							}
+			});
+			$("body").click(function() {
+				var obj= new PhysicalObject(""+nId);
+				obj.xPos=mouseXPos;
+				obj.yPos=mouseYPos;
+				objs.push(obj);
+				nId++;
+			});
+			
+			$(document).mousemove(function(e){
+			      mouseXPos = e.pageX;
+			      mouseYPos = e.pageY;
+			}); 
+			
+		}
+		
+		function loop(){			
+				var d = new Date();
+				var n = d.getTime();
+				var seconds=n/1000;
+				var dif=seconds-tiempo;
+				tiempo=seconds;
+				$.each(objs, function(index1, value1) { 
+					value1.xFuerza=0;
+					value1.yFuerza=0;
+					$.each(objs, function(index2, value2) { 
+							if(!value1.removed&&!value2.removed){
+							if(value1!=value2){
+							var signo=1;
+							if(value1.xPos>value2.xPos){
+								signo=-1;
+							}
+							var x=value2.xPos-value1.xPos;
+							var y=value2.yPos-value1.yPos;
+							var distancia=Math.sqrt(Math.pow(x,2)+Math.pow(y,2));
+							var criticaldistance=value1.radio+value2.radio;
+							var angulo=Math.atan(y/x);
+							if(distancia>minDistance){
+									var fuerza=signo*G*value1.masa*value2.masa/Math.pow(distancia,2);
+									value1.xFuerza+=fuerza*Math.cos(angulo);
+									value1.yFuerza+=fuerza*Math.sin(angulo);	
+							}
+							//if(distancia>criticaldistance){
+														
+							/*}else{
+								//Colision
+								
+								var coef=2*value1.masa/(value2.masa+value1.masa);
+								value1.xVelocidad=(value2.xVelocidad*value2.masa)+(value1.xVelocidad*value1.masa);
+								value1.yVelocidad=(value2.yVelocidad*value2.masa)+(value1.yVelocidad*value1.masa);
+								value1.radio+=value2.radio;
+								value1.masa+=value2.masa;
+								value1.xVelocidad=value1.xVelocidad/value1.masa;
+								value1.yVelocidad=value1.yVelocidad/value1.masa;
+								//value1.xPos+=x/2;
+								//value1.yPos+=y/2;
+								value2.removed=true;
+								$("#"+value2.id).remove();
+								//alert(distancia+" "+criticaldistance);
+							}*/
+							}
+						}
+					});
+				});
+				$.each(objs, function(index, value) { 
+						if(!value.removed){
+						if(!value.static){
+								var html="<div style='left:"+value.xPos+"px;top:"+value.yPos+"' class='rastro'></div>"
+								$("body").append(html);
+								
+				 		var xAceleracion=value.xFuerza/value.masa;
+						var yAceleracion=value.yFuerza/value.masa;
+						value.xPos=.5 * xAceleracion * (dif*dif)+value.xVelocidad*dif+value.xPos;
+						value.xVelocidad=xAceleracion*dif+value.xVelocidad;
+						value.yPos=.5 * yAceleracion * (dif*dif)+value.yVelocidad*dif+value.yPos;
+						value.yVelocidad=yAceleracion*dif+value.yVelocidad;
+						}
+						var element=document.getElementById(value.id);
+						if(element==null){
+							var html="<div id=\""+value.id+"\" class='obj'></div>"
+							$("body").append(html);
+							element=document.getElementById(value.id);
+						}
+						$(element).css("left",(value.xPos-value.radio)+"px");
+						$(element).css("top",(value.yPos-value.radio)+"px");
+						$(element).css("width",(value.radio*2)+"px");
+						$(element).css("height",(value.radio*2)+"px");
+						$(element).css("border-radius",value.radio+"px");
+						}	
+					
+				});
+				//conflicts
+					$.each(objs, function(index1, value1) { 
+						$.each(objs, function(index2, value2) {
+							if(value1!=value2){
+							var x=value2.xPos-value1.xPos;
+							var y=value2.yPos-value1.yPos;
+							var distancia=Math.sqrt(Math.pow(x,2)+Math.pow(y,2));
+							var criticaldistance=value1.radio+value2.radio;
+						
+							}
+							
+						});
+					});
+				
+				setTimeout("loop()",frameRate);
+				
+				var html="";
+				html="xPos:"+obj1.xPos+"<br />";
+				html+="yPos:"+obj1.yPos+"<br />";
+				html+="xVelocidad:"+obj1.xVelocidad+"<br />";
+				html+="yVelocidad:"+obj1.yVelocidad+"<br />";
+				html+="i:"+i+"<br />";
+				$("#indicator").html(html);
+				i++;
+				return true;
+		}
+		
+	
+		
+	</script>
+</head>
+<body onload="ready()">
+
+<div id="indicator">
+</div>
+
+
+
+</body>
+</html>
